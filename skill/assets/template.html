@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 【替换点】改标题 -->
+<title>机械机构交互演示 · 模板</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0c1016;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8edf4; }
+  #app { position:fixed; inset:0; }
+  #labels { position:fixed; inset:0; pointer-events:none; }
+  .glabel { background:rgba(16,22,32,.72); border:1px solid rgba(120,160,220,.35);
+    padding:2px 8px; border-radius:10px; font-size:12px; color:#bcd4f0;
+    white-space:nowrap; backdrop-filter:blur(3px); }
+  .glabel.hot { border-color:#ff9c4a; color:#ffd9b0; background:rgba(60,32,8,.7); }
+  .panel { position:fixed; background:rgba(14,19,27,.88); border:1px solid rgba(110,140,190,.22);
+    border-radius:12px; padding:14px 16px; backdrop-filter:blur(8px);
+    box-shadow:0 8px 32px rgba(0,0,0,.45); }
+  #ctrl { left:18px; top:18px; width:200px; }
+  #ctrl h3 { font-size:13px; color:#9db4d6; font-weight:600; margin-bottom:10px; letter-spacing:1px; }
+  .gbtn { padding:10px 0; margin-bottom:7px; text-align:center; border-radius:8px;
+    border:1px solid rgba(140,170,220,.28); background:rgba(40,52,72,.6);
+    color:#cfe0f5; font-size:14px; font-weight:700; cursor:pointer; transition:all .15s; user-select:none; }
+  .gbtn:hover { background:rgba(60,78,108,.8); }
+  .gbtn.active { background:linear-gradient(160deg,#ff8a2a,#e0600c); border-color:#ffb066; color:#fff;
+    box-shadow:0 0 14px rgba(255,138,42,.45); }
+  .ctrlrow { margin-top:10px; }
+  .ctrlrow label { font-size:12px; color:#9db4d6; display:flex; justify-content:space-between; }
+  .ctrlrow input[type=range] { width:100%; margin-top:5px; accent-color:#ff8a2a; }
+  .btns { display:flex; gap:7px; margin-top:10px; }
+  .sbtn { flex:1; padding:8px 0; border-radius:8px; border:1px solid rgba(140,170,220,.28);
+    background:rgba(40,52,72,.6); color:#cfe0f5; font-size:12.5px; cursor:pointer; text-align:center; user-select:none; }
+  .sbtn:hover { background:rgba(60,78,108,.8); }
+  .sbtn.on { background:rgba(56,96,150,.7); border-color:#6fa8e8; }
+  .checkline { display:flex; align-items:center; gap:6px; margin-top:9px; font-size:12.5px; color:#b8c8e0; cursor:pointer; }
+  .checkline input { accent-color:#ff8a2a; }
+  #dash { right:18px; top:18px; width:228px; }
+  #dash h3 { font-size:13px; color:#9db4d6; font-weight:600; margin-bottom:10px; letter-spacing:1px; }
+  .drow { display:flex; justify-content:space-between; align-items:baseline; margin:8px 0; font-size:13px; }
+  .drow .k { color:#8fa6c6; }
+  .drow .v { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; color:#eaf1fb; }
+  .drow .v small { font-size:12px; font-weight:400; color:#8fa6c6; }
+  .bar { height:6px; border-radius:3px; background:rgba(255,255,255,.08); margin-top:3px; overflow:hidden; }
+  .bar i { display:block; height:100%; background:linear-gradient(90deg,#3fa0ff,#7ed0ff); transition:width .15s; }
+  #flowBox { margin-top:10px; font-size:12px; line-height:1.7; color:#b8c8e0;
+    background:rgba(28,38,54,.6); border-radius:8px; padding:8px 10px; min-height:50px; }
+  #flowBox b { color:#ffb066; }
+  #info { left:50%; transform:translateX(-50%); bottom:16px; font-size:12px; color:#7f93b3;
+    padding:8px 16px; text-align:center; }
+  #stateTag { position:fixed; left:50%; top:22px; transform:translateX(-50%); font-size:26px; font-weight:800;
+    letter-spacing:6px; text-shadow:0 2px 12px rgba(0,0,0,.8); pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="labels"></div>
+<div id="stateTag">—</div>
+
+<div class="panel" id="ctrl">
+  <h3>工况控制</h3>
+  <!-- 【替换点】工况按钮，data-s 对应 STATES 的键 -->
+  <div class="gbtn" data-s="low">低速挡</div>
+  <div class="gbtn" data-s="high">高速挡</div>
+  <div class="gbtn" data-s="neutral">空挡</div>
+  <div class="ctrlrow">
+    <label>输入转速 <span id="rpmVal">900 rpm</span></label>
+    <input type="range" id="rpm" min="0" max="3000" step="50" value="900">
+  </div>
+  <div class="btns"><div class="sbtn on" id="playBtn">⏸ 暂停</div></div>
+  <label class="checkline"><input type="checkbox" id="lblChk" checked> 显示零件标注</label>
+  <label class="checkline"><input type="checkbox" id="flowChk" checked> 动力流高亮</label>
+</div>
+
+<div class="panel" id="dash">
+  <h3>运行数据</h3>
+  <div class="drow"><span class="k">当前工况</span><span class="v" id="dState">—</span></div>
+  <div class="drow"><span class="k">输入转速</span><span class="v" id="dIn">0<small> rpm</small></span></div>
+  <div class="bar"><i id="bIn" style="width:0%"></i></div>
+  <div class="drow" style="margin-top:10px;"><span class="k">输出转速</span><span class="v" id="dOut">0<small> rpm</small></span></div>
+  <div class="bar"><i id="bOut" style="width:0%;background:linear-gradient(90deg,#ff9c4a,#ffc78a)"></i></div>
+  <div class="drow" style="margin-top:10px;"><span class="k">传动比</span><span class="v" id="dRatio">—</span></div>
+  <div id="flowBox">动力流说明。</div>
+</div>
+
+<div class="panel" id="info">
+  <!-- 【替换点】机构说明 -->
+  机械机构交互演示模板 · 鼠标拖拽旋转 / 滚轮缩放 / 右键平移
+</div>
+
+<script>
+window.addEventListener('error', function(e){
+  var s = document.getElementById('flowBox');
+  if(s) s.textContent = 'ERROR: '+e.message+' @line '+e.lineno;
+});
+</script>
+<!-- 开发期用本地 lib；离线发布前用 scripts/build_single.py 打包成单文件 -->
+<script type="importmap">
+{ "imports": {
+  "three": "./lib/three.module.js",
+  "three/addons/": "./lib/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/CSS2DRenderer.js';
+
+/* ============================================================
+   【替换区 1/3】机构定义
+   下面是一个"双轴 + 啮合齿轮 + 空套齿轮"的最小示例。
+   换成你的机构：轴、齿轮、连杆等，每个运动件用一个对象描述。
+   ============================================================ */
+
+// 轴（固定位置，齿轮绕其旋转）。轴线统一沿世界 X 方向。
+const AXES = {
+  in:  { pos:[0, 0, 0] },    // 输入轴
+  out: { pos:[0, 0, 90] },   // 输出轴（中心距 90）
+};
+
+// 齿轮：z 齿数、m 模数、b 齿宽、axis 所在轴、x 沿轴位置、
+// mate 啮合对象、loose 是否空套（不随轴）、name 标签
+const GEARS = {
+  A1: { z:20, m:3, b:24, axis:'in',  x:0, mate:'B1', name:'主动齿轮 Z20' },
+  B1: { z:40, m:3, b:24, axis:'out', x:0, mate:'A1', name:'低速从动齿轮 Z40' },
+  B2: { z:28, m:3, b:24, axis:'out', x:70, mate:'A1', loose:true, name:'高速空套齿轮 Z28' },
+};
+
+/* 工况（状态机）：每个工况定义
+   ratio : 输出/输入 的减速比（由齿数算，i = z从动/z主动）
+   path  : 动力流经过的零件（用于高亮）
+   说明：外啮合转向相反；空套齿轮未挂挡时不传递动力。 */
+const STATES = {
+  neutral: { label:'空挡', ratio:0, path:['A1'],
+             note:'动力在空套齿轮处<b>断开</b>，输出轴不转。' },
+  low:     { label:'低速', ratio:40/20, path:['A1','B1'],
+             note:'动力经 Z20→Z40，减速比 <b>2.0</b>，输出轴低速反转。' },
+  high:    { label:'高速', ratio:28/20, path:['A1','B2'],
+             note:'挂入高速挡，空套齿轮 Z28 被锁死，减速比 <b>1.4</b>。' },
+};
+
+/* ============================================================
+   【替换区 2/3】运动学
+   一般无需改动；若机构含连杆/凸轮等，在 updateKinematics() 内补充。
+   ============================================================ */
+
+const state = {
+  current:'neutral', inputRpm:900, running:true,
+  angle:{},      // 每个齿轮的累计角位移（弧度）
+  omega:{},      // 每个齿轮当前角速度（rad/s，带符号）
+};
+Object.keys(GEARS).forEach(k => { state.angle[k] = 0; state.omega[k] = 0; });
+
+// 根据当前工况，求各齿轮角速度（输入轴角速度 = ωIn）
+function solveKinematics(){
+  const rpm2rad = v => v * 2*Math.PI/60;
+  const wIn = rpm2rad(state.inputRpm);
+  // 默认全部停止
+  Object.keys(GEARS).forEach(k => state.omega[k] = 0);
+  // 输入轴上的主动齿轮随输入转
+  state.omega.A1 = wIn;
+  const st = STATES[state.current];
+  if(state.current === 'neutral'){
+    // 空挡：与主动齿轮啮合的齿轮仍会被带着空转（演示用），但不输出
+    state.omega.B1 = -wIn * GEARS.A1.z / GEARS.B1.z;
+    state.omega.B2 = -wIn * GEARS.A1.z / GEARS.B2.z;
+    return;
+  }
+  // 挂挡：path 上的齿轮按啮合关系转，其余停
+  // 低速：A1→B1
+  state.omega.B1 = -wIn * GEARS.A1.z / GEARS.B1.z;
+  state.omega.B2 = 0;
+  if(state.current === 'high'){
+    state.omega.B1 = 0;
+    state.omega.B2 = -wIn * GEARS.A1.z / GEARS.B2.z;
+  }
+}
+
+/* ============================================================
+   场景 / 渲染器（通用，一般无需改）
+   ============================================================ */
+const container = document.getElementById('app');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0c1016);
+scene.fog = new THREE.Fog(0x0c1016, 600, 1600);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 1, 5000);
+// 对准机构中心（按实际零件包围盒调整）
+const VIEW = { target:[25, 0, 50], pos:[300, 210, 330] };
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(VIEW.target[0], VIEW.target[1], VIEW.target[2]);
+camera.position.set(VIEW.pos[0], VIEW.pos[1], VIEW.pos[2]);
+controls.update();
+
+// 灯光
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(300, 400, 300); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left=-400;key.shadow.camera.right=400;
+key.shadow.camera.top=400;key.shadow.camera.bottom=-400;
+scene.add(key);
+const fillLight = new THREE.DirectionalLight(0x88aaff, 0.5);
+fillLight.position.set(-200, 100, -200);
+scene.add(fillLight);
+
+// 地面网格
+const grid = new THREE.GridHelper(1200, 40, 0x2a3a52, 0x182436);
+grid.position.y = -120;
+scene.add(grid);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+document.getElementById('labels').appendChild(labelRenderer.domElement);
+
+/* ============================================================
+   渐开线齿轮几何（通用，可直接复用；支持直齿/斜齿）
+   ============================================================ */
+function buildGear(spec){
+  const { z, m, b } = spec;
+  const beta = spec.beta || 0;                 // 螺旋角（度），0=直齿
+  const r  = m*z/2, ra = r + m, rf = r - 1.25*m, rb = r*Math.cos(20*Math.PI/180);
+  const shape = new THREE.Shape();
+  const N = z, pts = [];
+  const polar = (r, a) => [r*Math.cos(a), r*Math.sin(a)];
+  for(let i=0;i<N;i++){
+    const c = i*2*Math.PI/N;                  // 齿槽/齿中心
+    const hw = 0.5*Math.PI/N;                 // 半齿距角
+    // 齿槽底（齿根圆）
+    pts.push(polar(rf, c - hw*0.7));
+    pts.push(polar(rf, c - hw*0.3));
+    // 渐开线（用两段直线近似，足够演示）
+    pts.push(polar(rb, c - hw*0.15));
+    pts.push(polar(ra, c - hw*0.05));
+    // 齿顶
+    pts.push(polar(ra, c + hw*0.05));
+    pts.push(polar(rb, c + hw*0.15));
+    pts.push(polar(rf, c + hw*0.3));
+    pts.push(polar(rf, c + hw*0.7));
+  }
+  shape.moveTo(pts[0][0], pts[0][1]);
+  for(let i=1;i<pts.length;i++) shape.lineTo(pts[i][0], pts[i][1]);
+  shape.closePath();
+  // 中心孔
+  const hole = new THREE.Path();
+  hole.absarc(0,0, m*0.9, 0, 2*Math.PI, true);
+  shape.holes.push(hole);
+
+  const geo = new THREE.ExtrudeGeometry(shape, { depth:b, bevelEnabled:false, steps:1 });
+  geo.translate(0,0,-b/2);
+  // 斜齿：扭转（简化，对顶点按 z 加周向偏移）
+  if(beta){
+    const twist = (b*Math.tan(beta*Math.PI/180))/r;
+    const pos = geo.attributes.position;
+    for(let i=0;i<pos.count;i++){
+      const z = pos.getZ(i);
+      const x = pos.getX(i), y = pos.getY(i);
+      const a = (z/b)*twist;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      pos.setX(i, x*ca - y*sa); pos.setY(i, x*sa + y*ca);
+    }
+    geo.computeVertexNormals();
+  }
+  // Extrude 默认沿 Z；旋转使齿轴沿世界 X
+  geo.rotateY(Math.PI/2);
+  const mat = new THREE.MeshStandardMaterial({
+    color: spec.color || 0x9aa3ad, metalness:0.9, roughness:0.35 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  return mesh;
+}
+
+/* ============================================================
+   【替换区 3/3】装配：把零件放到场景，记录可旋转对象
+   ============================================================ */
+const gearObjs = {};
+const labelObjs = [];
+function addLabel(text, pos, hot){
+  const d = document.createElement('div');
+  d.className = 'glabel' + (hot?' hot':'');
+  d.textContent = text;
+  const o = new CSS2DObject(d);
+  o.position.set(pos[0], pos[1], pos[2]);
+  scene.add(o); labelObjs.push(o); return o;
+}
+
+// 轴（简单圆柱）
+for(const [key, ax] of Object.entries(AXES)){
+  const sh = new THREE.CylinderGeometry(6, 6, 220, 24);
+  sh.rotateZ(Math.PI/2);
+  const mesh = new THREE.Mesh(sh, new THREE.MeshStandardMaterial(
+    { color:0xb8c0c8, metalness:0.85, roughness:0.4 }));
+  mesh.position.set(ax.pos[0], ax.pos[1], ax.pos[2]);
+  scene.add(mesh);
+}
+
+// 齿轮：每个齿轮一个 Group，定位到所在轴 + 沿轴位置
+for(const [key, spec] of Object.entries(GEARS)){
+  const ax = AXES[spec.axis].pos;
+  const grp = new THREE.Group();
+  const mesh = buildGear(spec);
+  grp.add(mesh);
+  grp.position.set(ax[0] + spec.x, ax[1], ax[2]);
+  scene.add(grp);
+  gearObjs[key] = grp;
+  // 标签放在齿顶上方
+  addLabel(spec.name, [ax[0]+spec.x, spec.m*spec.z/2 + 18, ax[2]], false);
+}
+
+/* ============================================================
+   交互绑定
+   ============================================================ */
+const showLabels = () => labelObjs.forEach(o =>
+  o.element.style.display = document.getElementById('lblChk').checked ? '':'none');
+const setState = (s) => {
+  state.current = s;
+  document.querySelectorAll('.gbtn').forEach(b =>
+    b.classList.toggle('active', b.dataset.s === s));
+  document.getElementById('stateTag').textContent = STATES[s].label;
+  document.getElementById('dState').textContent = STATES[s].label;
+  document.getElementById('flowBox').innerHTML = '动力流：' + STATES[s].note;
+  applyHighlight();
+  solveKinematics();
+};
+function applyHighlight(){
+  const on = document.getElementById('flowChk').checked;
+  const path = STATES[state.current].path;
+  for(const [k, grp] of Object.entries(gearObjs)){
+    grp.children.forEach(c => {
+      if(c.material){
+        c.material.emissive = new THREE.Color(on && path.includes(k) ? 0xff7a1a : 0x000000);
+        c.material.emissiveIntensity = on && path.includes(k) ? 0.6 : 0;
+      }
+    });
+  }
+}
+document.querySelectorAll('.gbtn').forEach(b =>
+  b.addEventListener('click', () => setState(b.dataset.s)));
+document.getElementById('rpm').addEventListener('input', e => {
+  state.inputRpm = +e.target.value;
+  document.getElementById('rpmVal').textContent = state.inputRpm + ' rpm';
+  solveKinematics();
+});
+document.getElementById('playBtn').addEventListener('click', e => {
+  state.running = !state.running;
+  e.target.textContent = state.running ? '⏸ 暂停' : '▶ 运行';
+  e.target.classList.toggle('on', state.running);
+});
+document.getElementById('lblChk').addEventListener('change', showLabels);
+document.getElementById('flowChk').addEventListener('change', applyHighlight);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+});
+
+/* ============================================================
+   主循环：rAF + setInterval 双驱动（防止隐藏标签 rAF 冻结）
+   ============================================================ */
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  if(state.running){
+    for(const [k, grp] of Object.entries(gearObjs)){
+      state.angle[k] += state.omega[k]*dt;
+      grp.rotation.x = state.angle[k];   // 齿轮轴沿世界 X
+    }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+  updateDashboard();
+  requestAnimationFrame(tick);
+}
+function updateDashboard(){
+  document.getElementById('dIn').innerHTML =
+    state.inputRpm + '<small> rpm</small>';
+  document.getElementById('bIn').style.width = (state.inputRpm/3000*100) + '%';
+  const st = STATES[state.current];
+  let outRpm = 0;
+  if(state.current !== 'neutral'){
+    const driven = st.path[st.path.length-1];
+    outRpm = Math.abs(state.omega[driven])*60/(2*Math.PI);
+  }
+  document.getElementById('dOut').innerHTML = Math.round(outRpm) + '<small> rpm</small>';
+  document.getElementById('bOut').style.width = (outRpm/3000*100) + '%';
+  document.getElementById('dRatio').textContent =
+    state.current==='neutral' ? '—' : st.ratio.toFixed(3);
+}
+// 兜底：隐藏标签下 rAF 可能停摆，确保仍能推进
+setInterval(() => {
+  if(document.hidden && state.running){
+    const now = performance.now();
+    const dt = Math.min(0.05,(now-last)/1000); last = now;
+    for(const [k,grp] of Object.entries(gearObjs)){
+      state.angle[k] += state.omega[k]*dt; grp.rotation.x = state.angle[k];
+    }
+  }
+}, 30);
+
+// 初始化
+solveKinematics();
+setState('neutral');
+showLabels();
+requestAnimationFrame(tick);
+
+// 暴露静态跳转，供自动化/外部调用（不依赖动画累积）
+window.jumpToState = setState;
+</script>
+</body>
+</html>

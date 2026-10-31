@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行星齿轮组交互演示</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b0e14;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e6e9ef; }
+  #app { position:fixed; inset:0; }
+  .panel { position:absolute; background:rgba(18,22,30,0.86); border:1px solid rgba(120,140,170,0.22);
+    border-radius:12px; padding:14px 16px; backdrop-filter:blur(8px); box-shadow:0 8px 28px rgba(0,0,0,0.4); }
+  #ctrl { top:18px; left:18px; width:232px; }
+  #data { top:18px; right:18px; width:268px; }
+  #view { bottom:18px; left:18px; }
+  h2 { font-size:15px; margin-bottom:10px; letter-spacing:1px; color:#cfd8e6; }
+  .btn { display:block; width:100%; margin:7px 0; padding:9px 10px; border:none; border-radius:8px;
+    background:#232a38; color:#dde4ee; font-size:14px; cursor:pointer; transition:all .15s; }
+  .btn:hover { background:#2e3747; }
+  .btn.active { background:#e8772e; color:#fff; box-shadow:0 0 0 2px rgba(232,119,46,0.35); }
+  .btn.small { display:inline-block; width:auto; padding:6px 12px; font-size:13px; margin:3px 4px 0 0; }
+  .row { margin:10px 0; font-size:13px; color:#aeb8c8; }
+  input[type=range] { width:100%; margin-top:6px; accent-color:#e8772e; }
+  .kv { display:flex; justify-content:space-between; align-items:baseline; margin:8px 0; font-size:13px; }
+  .kv .k { color:#9aa6b8; }
+  .kv .v { font-size:22px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
+  .kv .v small { font-size:12px; font-weight:400; color:#9aa6b8; }
+  .bar { height:6px; border-radius:3px; background:#1c2230; margin-top:4px; overflow:hidden; }
+  .bar > i { display:block; height:100%; border-radius:3px;
+    background:linear-gradient(90deg,#3fae8a,#7fd1b5); transition:width .15s; }
+  .bar.in > i { background:linear-gradient(90deg,#e8772e,#f2b07a); }
+  .tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:12px; font-weight:600; }
+  .tag.fix { background:rgba(220,80,80,0.18); color:#e88; }
+  .tag.drv { background:rgba(232,119,46,0.2); color:#f2a86a; }
+  .tag.out { background:rgba(63,174,138,0.2); color:#7fd1b5; }
+  .note { margin-top:10px; font-size:12px; line-height:1.6; color:#9aa6b8;
+    background:rgba(0,0,0,0.22); border-radius:8px; padding:8px 10px; }
+  .label { color:#eef2f8; font-size:12px; background:rgba(10,14,22,0.7);
+    padding:2px 7px; border-radius:6px; border:1px solid rgba(140,160,190,0.25); white-space:nowrap; }
+  #hint { position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+    font-size:12px; color:#7d8898; background:rgba(10,14,20,0.6); padding:6px 14px; border-radius:20px; }
+  #view { display:none; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./lib/three.module.js",
+    "three/addons/": "./lib/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="ctrl" class="panel">
+  <h2>工况控制</h2>
+  <button class="btn st" data-s="ringFixed">齿圈固定（大减速）</button>
+  <button class="btn st" data-s="sunFixed">太阳轮固定（小减速）</button>
+  <button class="btn st" data-s="carrierFixed">系杆固定（反向）</button>
+  <button class="btn st" data-s="direct">直接挡（锁死）</button>
+  <div class="row">输入转速 <span id="rpmVal">900</span> rpm
+    <input type="range" id="rpm" min="100" max="2000" step="50" value="900">
+  </div>
+  <button class="btn" id="pause">⏸ 暂停</button>
+  <div class="row"><label><input type="checkbox" id="showLabel" checked> 显示零件标签</label></div>
+</div>
+
+<div id="data" class="panel">
+  <h2>运行数据</h2>
+  <div class="kv"><span class="k">当前工况</span><span class="v" id="dState" style="font-size:17px">—</span></div>
+  <div class="kv"><span class="k">输入转速</span><span class="v" id="dIn">—</span></div>
+  <div class="bar in"><i id="bIn" style="width:0"></i></div>
+  <div class="kv"><span class="k">输出转速</span><span class="v" id="dOut">—</span></div>
+  <div class="bar"><i id="bOut" style="width:0"></i></div>
+  <div class="kv"><span class="k">固定件</span><span id="dFixed" style="font-size:14px">—</span></div>
+  <div class="kv"><span class="k">传动比</span><span class="v" id="dRatio">—</span></div>
+  <div class="note" id="dNote"></div>
+</div>
+
+<div id="view" class="panel">
+  <button class="btn small vw" data-v="iso">立体</button>
+  <button class="btn small vw" data-v="face">端面</button>
+  <button class="btn small vw" data-v="side">侧视</button>
+</div>
+<div id="hint">鼠标拖拽旋转 · 滚轮缩放 · 右键平移</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/CSS2DRenderer.js';
+
+/* ============ 参数（行星齿轮组） ============ */
+const m = 3;
+const ZS = 24, ZP = 12, ZR = 48, NP = 3;   // 太阳/行星/齿圈齿数，行星轮个数
+const RS = m*ZS/2, RP = m*ZP/2, RR = m*ZR/2; // 节圆 36 / 18 / 72
+const ORBIT_R = RS + RP;                     // 行星中心公转半径 54
+const BW = 26;                               // 齿轮齿宽
+
+/* 工况：rpm 为各基本件转速；ratio = 输入/输出（负号反向） */
+const STATES = {
+  ringFixed: {
+    name:'齿圈固定', fixed:'r', driver:'s', output:'c',
+    rpm:{ s:900, r:0, c:300 }, ratio:3.000,
+    note:'太阳轮输入、齿圈固定、系杆输出。系杆把动力经 3 个行星轮"分流"后汇合，大减速比，低速高扭矩（常见于 1 挡）。'
+  },
+  sunFixed: {
+    name:'太阳轮固定', fixed:'s', driver:'r', output:'c',
+    rpm:{ r:900, s:0, c:600 }, ratio:1.500,
+    note:'齿圈输入、太阳轮固定、系杆输出。减速比较小，输出转速较高。'
+  },
+  carrierFixed: {
+    name:'系杆固定', fixed:'c', driver:'s', output:'r',
+    rpm:{ s:900, c:0, r:-450 }, ratio:-2.000,
+    note:'太阳轮输入、系杆固定、齿圈输出。系杆不转时退化为普通定轴轮系，齿圈输出且转向相反（倒挡原理）。'
+  },
+  direct: {
+    name:'直接挡', fixed:null, driver:'all', output:'all',
+    rpm:{ s:900, r:900, c:900 }, ratio:1.000,
+    note:'离合器把任意两个基本件锁死，第三个必然同速，三者一体转动，传动比 1（直接挡，无减速损耗）。'
+  }
+};
+
+/* ============ 场景 ============ */
+const app = document.getElementById('app');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+app.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0e14);
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 1, 3000);
+const VIEWS = {
+  iso:  { pos:[150,115,165], tg:[0,0,0] },
+  face: { pos:[185,2,2],     tg:[0,0,0] },
+  side: { pos:[6,70,205],    tg:[0,0,0] }
+};
+camera.position.set(...VIEWS.iso.pos);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0,0,0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position='absolute';
+labelRenderer.domElement.style.top='0'; labelRenderer.domElement.style.pointerEvents='none';
+app.appendChild(labelRenderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
+keyLight.position.set(120, 180, 120);
+scene.add(keyLight);
+const fillLight = new THREE.DirectionalLight(0x88aaff, 0.45);
+fillLight.position.set(-150, 80, -120);
+scene.add(fillLight);
+const grid = new THREE.GridHelper(320, 32, 0x2a3346, 0x181f2c);
+grid.position.y = -95;
+scene.add(grid);
+
+/* ============ 几何：渐开线外齿轮 ============ */
+function involuteGearShape(z, mod){
+  const r = mod*z/2, rb = r*Math.cos(20*Math.PI/180);
+  const ra = r + mod, rf = r - 1.25*mod;
+  const sh = new THREE.Shape();
+  const tp = 2*Math.PI/z;
+  for(let i=0;i<z;i++){
+    const a = i*tp;
+    const pts = [];
+    // 齿根（基圆以内用圆弧）
+    const aRoot0 = a - tp*0.5, aRoot1 = a + tp*0.5;
+    pts.push([rf*Math.cos(aRoot0), rf*Math.sin(aRoot0)]);
+    // 渐开线两侧
+    const inv = (sign)=>{
+      const out=[];
+      for(let k=0;k<=7;k++){
+        const t = k/7 * 0.55;
+        const ix = rb*(Math.cos(t)+t*Math.sin(t));
+        const iy = rb*(Math.sin(t)-t*Math.cos(t));
+        const ca = Math.cos(a + sign*tp*0.12), sa = Math.sin(a + sign*tp*0.12);
+        out.push([ix*ca - iy*sa, ix*sa + iy*ca]);
+      }
+      return out;
+    };
+    const left = inv(1), right = inv(-1);
+    // 确保渐开线到齿顶
+    const cap = (p)=>{
+      const rr2 = Math.hypot(p[0],p[1]);
+      if(rr2 < ra){ const sc = ra/rr2; return [p[0]*sc,p[1]*sc]; }
+      return p;
+    };
+    pts.push(...left.map(cap));
+    // 齿顶圆弧
+    const topL = cap(left[left.length-1]), topR = cap(right[right.length-1]);
+    pts.push(topR);
+    pts.push(...right.slice(0,-1).reverse().map(cap));
+    pts.push([rf*Math.cos(aRoot1), rf*Math.sin(aRoot1)]);
+    if(i===0) sh.moveTo(pts[0][0],pts[0][1]);
+    for(const p of pts.slice(1)) sh.lineTo(p[0],p[1]);
+  }
+  sh.closePath();
+  return sh;
+}
+function buildGear(z, mod, b, color){
+  const geo = new THREE.ExtrudeGeometry(involuteGearShape(z,mod),
+    { depth:b, bevelEnabled:false, steps:1 });
+  geo.rotateY(Math.PI/2);          // 轴沿 X
+  geo.translate(-b/2, 0, 0);
+  const mat = new THREE.MeshStandardMaterial({ color, metalness:0.9, roughness:0.32 });
+  return new THREE.Mesh(geo, mat);
+}
+/* 内齿圈：外圆 + 内齿孔（矩形齿近似） */
+function buildRing(z, mod, b, color){
+  const ra = mod*z/2 - mod;        // 内齿顶圆（向内）69
+  const rf = mod*z/2 + 1.25*mod;   // 内齿根圆 75
+  const rOut = mod*z/2 + mod + 7; // 外圆 82
+  const sh = new THREE.Shape();
+  sh.absarc(0,0,rOut,0,Math.PI*2,false);
+  const hole = new THREE.Path();
+  const tp = 2*Math.PI/z, tw = tp*0.5;
+  hole.moveTo(rf,0);
+  for(let i=0;i<z;i++){
+    const am = i*tp + tp/2, a1=am-tw/2, a2=am+tw/2, a3=(i+1)*tp;
+    hole.lineTo(ra*Math.cos(a1), ra*Math.sin(a1));
+    hole.lineTo(ra*Math.cos(a2), ra*Math.sin(a2));
+    hole.lineTo(rf*Math.cos(a3), rf*Math.sin(a3));
+  }
+  hole.closePath();
+  sh.holes.push(hole);
+  const geo = new THREE.ExtrudeGeometry(sh,{depth:b,bevelEnabled:false,steps:1});
+  geo.rotateY(Math.PI/2); geo.translate(-b/2,0,0);
+  const mat = new THREE.MeshStandardMaterial({ color, metalness:0.9, roughness:0.38 });
+  return new THREE.Mesh(geo, mat);
+}
+/* 圆柱（轴/盘），轴沿 X */
+function cylX(r,len,color,x=0){
+  const g = new THREE.CylinderGeometry(r,r,len,28);
+  g.rotateZ(Math.PI/2);
+  const m = new THREE.MeshStandardMaterial({ color, metalness:0.85, roughness:0.4 });
+  const mesh = new THREE.Mesh(g,m); mesh.position.x = x; return mesh;
+}
+function addLabel(text, pos){
+  const d = document.createElement('div'); d.className='label'; d.textContent=text;
+  const o = new CSS2DObject(d); o.position.set(...pos); scene.add(o); return o;
+}
+
+/* ============ 装配 ============ */
+const COL = { s:0xe8a33d, p:0x4a90d9, r:0x9aa2ab, c:0x3fae8a, shaft:0xb8c0c8 };
+
+// 太阳轮组
+const sunGroup = new THREE.Group();
+sunGroup.add(buildGear(ZS,m,BW,COL.s));
+sunGroup.add(cylX(7,90,COL.shaft,55));     // 太阳轴（输入，向右）
+scene.add(sunGroup);
+
+// 齿圈组
+const ringGroup = new THREE.Group();
+ringGroup.add(buildRing(ZR,m,BW,COL.r));
+scene.add(ringGroup);
+
+// 系杆组
+const carrierGroup = new THREE.Group();
+carrierGroup.add(cylX(48,8,COL.c,-20));    // 系杆圆盘
+carrierGroup.add(cylX(7,90,COL.shaft,-55));// 系杆轴（输出，向左）
+const planetPivots = [];
+for(let i=0;i<NP;i++){
+  const phi = i*2*Math.PI/NP;
+  const pivot = new THREE.Group();
+  pivot.position.set(0, ORBIT_R*Math.cos(phi), ORBIT_R*Math.sin(phi));
+  pivot.add(buildGear(ZP,m,BW,COL.p));
+  pivot.add(cylX(4.5,34,COL.shaft,-12));   // 行星轴
+  carrierGroup.add(pivot);
+  planetPivots.push(pivot);
+}
+scene.add(carrierGroup);
+
+// 标签
+const labels = [];
+labels.push(addLabel('太阳轮 Z24',[18, 0, RS+16]));
+labels.push(addLabel('内齿圈 Z48',[18, 0, 90]));
+labels.push(addLabel('系杆',[-30, 0, 52]));
+labels.push(addLabel('行星轮 Z12',[18, ORBIT_R, 24]));
+
+/* ============ 状态与运动学 ============ */
+const state = {
+  current:'ringFixed',
+  inputRpm:900,
+  omega:{ s:0, r:0, c:0 },      // 当前角速度 rad/s
+  target:{ s:0, r:0, c:0 },
+  angle:{ s:0, r:0, c:0, pRel:0 },
+  paused:false
+};
+const rpm2w = v => v*2*Math.PI/60;
+
+function setState(name){
+  state.current = name;
+  const st = STATES[name];
+  const scale = state.inputRpm/900;
+  state.target = {
+    s: rpm2w(st.rpm.s*scale),
+    r: rpm2w(st.rpm.r*scale),
+    c: rpm2w(st.rpm.c*scale)
+  };
+  document.querySelectorAll('.btn.st').forEach(b=>b.classList.toggle('active', b.dataset.s===name));
+  // 固定件视觉
+  setFixed(sunGroup, st.fixed==='s');
+  setFixed(ringGroup, st.fixed==='r');
+  setFixed(carrierGroup, st.fixed==='c');
+}
+function setFixed(grp, fixed){
+  grp.traverse(o=>{
+    if(o.isMesh){
+      const mat = o.material;
+      if(!mat.__base) mat.__base = { opacity:mat.opacity, trans:mat.transparent };
+      if(fixed){ mat.transparent=true; mat.opacity=0.35; }
+      else { mat.transparent=mat.__base.trans; mat.opacity=mat.__base.opacity; }
+      mat.needsUpdate = true;
+    }
+  });
+}
+
+/* ============ 主循环 ============ */
+let last = performance.now();
+function tick(now){
+  requestAnimationFrame(tick);
+  const dt = Math.min((now-last)/1000, 0.05); last = now;
+  if(!state.paused){
+    // 角速度平滑过渡
+    for(const k of ['s','r','c']){
+      state.omega[k] += (state.target[k]-state.omega[k])*Math.min(1,dt*6);
+      state.angle[k] += state.omega[k]*dt;
+    }
+    // 行星轮相对系杆的自转：外啮合 ωp−ωc = −(ωs−ωc)·zs/zp
+    const pRelOmega = -(state.omega.s - state.omega.c)*ZS/ZP;
+    state.angle.pRel += pRelOmega*dt;
+    sunGroup.rotation.x = state.angle.s;
+    ringGroup.rotation.x = state.angle.r;
+    carrierGroup.rotation.x = state.angle.c;
+    for(const pv of planetPivots){ pv.children[0].rotation.x = state.angle.pRel; }
+  }
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+  updateDashboard();
+}
+function updateDashboard(){
+  const st = STATES[state.current];
+  const scale = state.inputRpm/900;
+  const drvRpm = Math.abs(st.rpm[st.driver==='all'?'s':st.driver]*scale);
+  const outRpm = st.output==='all' ? Math.abs(st.rpm.s*scale) : Math.abs(st.rpm[st.output]*scale);
+  const outRev = st.output==='all'?1:Math.sign(st.rpm[st.output]);
+  document.getElementById('dState').textContent = st.name;
+  document.getElementById('dIn').innerHTML = Math.round(drvRpm)+'<small> rpm</small>';
+  document.getElementById('bIn').style.width = (drvRpm/2000*100)+'%';
+  document.getElementById('dOut').innerHTML = (outRev<0?'−':'')+Math.round(outRpm)+'<small> rpm</small>';
+  document.getElementById('bOut').style.width = (outRpm/2000*100)+'%';
+  document.getElementById('dFixed').innerHTML = st.fixed
+    ? `<span class="tag fix">${ {s:'太阳轮',r:'齿圈',c:'系杆'}[st.fixed] }固定</span>`
+    : '<span style="color:#9aa6b8">无（离合器锁死）</span>';
+  document.getElementById('dRatio').textContent = st.ratio.toFixed(3);
+  document.getElementById('dNote').textContent = st.note;
+}
+
+/* ============ 事件 ============ */
+document.querySelectorAll('.btn.st').forEach(b=>b.addEventListener('click',()=>setState(b.dataset.s)));
+document.getElementById('rpm').addEventListener('input', e=>{
+  state.inputRpm = +e.target.value;
+  document.getElementById('rpmVal').textContent = state.inputRpm;
+  setState(state.current);
+});
+document.getElementById('pause').addEventListener('click', e=>{
+  state.paused = !state.paused;
+  e.target.textContent = state.paused ? '▶ 继续' : '⏸ 暂停';
+});
+document.getElementById('showLabel').addEventListener('change', e=>{
+  labelRenderer.domElement.style.display = e.target.checked ? '' : 'none';
+});
+document.querySelectorAll('.btn.vw').forEach(b=>b.addEventListener('click',()=>{
+  const v = VIEWS[b.dataset.v];
+  camera.position.set(...v.pos); controls.target.set(...v.tg);
+}));
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); labelRenderer.setSize(innerWidth,innerHeight);
+});
+
+// 兜底：隐藏标签 rAF 冻结时仍推进
+setInterval(()=>{ if(document.hidden && !state.paused){
+  const now = performance.now(); tick(now);
+}},33);
+window.jumpToState = setState;
+
+setState('ringFixed');
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

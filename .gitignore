@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 临时 / 输出
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 本地 CAD 与大文件（不入库）
+*.stp
+*.step
+*.igs
+*.iges
+*.stl
