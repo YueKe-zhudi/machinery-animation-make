@@ -18,6 +18,7 @@
 - **参数化重建**：渐开线直齿/斜齿齿轮、轴、同步器、连杆、壳体，轻量可动
 - **运动学引擎**：齿轮副、外啮合反向、空套齿轮、同步器锁死、直接挡、超速挡、惰轮、多工况状态机
 - **交互演示**：挡位/工况切换、OrbitControls、零件标签、实时仪表（转速/传动比/车速）、动力流高亮
+- **省算力 & 统一美术**：三档质量预算、材质共享、程序化环境光（不加载 HDR）、CSS 设计变量与响应式，详见 [`skill/references/perf-and-style.md`](skill/references/perf-and-style.md)
 - **离线单文件**：所有 ES module 内联为 Blob URL，`file://` 双击即用
 
 ## 示例：丰田 W58 五速手动变速器（A80 Supra）
@@ -108,7 +109,8 @@ python skill/scripts/measure_gears.py 总装配.STP gears.json -o gear_params.js
 
 详细方法论见 [docs/methodology.md](docs/methodology.md)；
 齿轮几何见 [skill/references/gear-geometry.md](skill/references/gear-geometry.md)；
-各机构运动学见 [skill/references/kinematics.md](skill/references/kinematics.md)。
+各机构运动学见 [skill/references/kinematics.md](skill/references/kinematics.md)；
+性能与美术见 [skill/references/perf-and-style.md](skill/references/perf-and-style.md)。
 
 ## 举一反三：常见机构速查
 
@@ -137,6 +139,7 @@ cad-mechanism-animator/
 │   ├── references/
 │   │   ├── gear-geometry.md       # 齿轮几何
 │   │   ├── kinematics.md          # 各机构运动学
+│   │   ├── perf-and-style.md      # 性能预算与美术规范
 │   │   └── troubleshooting.md     # 踩坑排查
 │   └── assets/
 │       └── template.html          # 通用交互模板

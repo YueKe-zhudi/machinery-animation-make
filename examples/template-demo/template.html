@@ -6,44 +6,54 @@
 <!-- 【替换点】改标题 -->
 <title>机械机构交互演示 · 模板</title>
 <style>
+  :root{
+    --bg:#0c1016; --panel:rgba(14,19,27,.88);
+    --ink:#e8edf4; --muted:#9db4d6;
+    --accent:#ff8a2a; --accent-deep:#e0600c; --info:#3fa0ff;
+    --line:rgba(140,170,220,.28);
+    --radius:12px; --gap:14px;
+    --shadow:0 8px 32px rgba(0,0,0,.45);
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html,body { width:100%; height:100%; overflow:hidden; background:#0c1016;
-    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8edf4; }
+  html,body { width:100%; height:100%; overflow:hidden; background:var(--bg);
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:var(--ink); }
   #app { position:fixed; inset:0; }
   #labels { position:fixed; inset:0; pointer-events:none; }
   .glabel { background:rgba(16,22,32,.72); border:1px solid rgba(120,160,220,.35);
     padding:2px 8px; border-radius:10px; font-size:12px; color:#bcd4f0;
     white-space:nowrap; backdrop-filter:blur(3px); }
   .glabel.hot { border-color:#ff9c4a; color:#ffd9b0; background:rgba(60,32,8,.7); }
-  .panel { position:fixed; background:rgba(14,19,27,.88); border:1px solid rgba(110,140,190,.22);
-    border-radius:12px; padding:14px 16px; backdrop-filter:blur(8px);
-    box-shadow:0 8px 32px rgba(0,0,0,.45); }
+  .panel { position:fixed; background:var(--panel); border:1px solid rgba(110,140,190,.22);
+    border-radius:var(--radius); padding:14px 16px; backdrop-filter:blur(8px);
+    box-shadow:var(--shadow); }
   #ctrl { left:18px; top:18px; width:200px; }
-  #ctrl h3 { font-size:13px; color:#9db4d6; font-weight:600; margin-bottom:10px; letter-spacing:1px; }
+  #ctrl h3 { font-size:13px; color:var(--muted); font-weight:600; margin-bottom:10px; letter-spacing:1px; }
   .gbtn { padding:10px 0; margin-bottom:7px; text-align:center; border-radius:8px;
-    border:1px solid rgba(140,170,220,.28); background:rgba(40,52,72,.6);
+    border:1px solid var(--line); background:rgba(40,52,72,.6);
     color:#cfe0f5; font-size:14px; font-weight:700; cursor:pointer; transition:all .15s; user-select:none; }
   .gbtn:hover { background:rgba(60,78,108,.8); }
-  .gbtn.active { background:linear-gradient(160deg,#ff8a2a,#e0600c); border-color:#ffb066; color:#fff;
+  .gbtn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .gbtn.active { background:linear-gradient(160deg,var(--accent),var(--accent-deep)); border-color:#ffb066; color:#fff;
     box-shadow:0 0 14px rgba(255,138,42,.45); }
   .ctrlrow { margin-top:10px; }
-  .ctrlrow label { font-size:12px; color:#9db4d6; display:flex; justify-content:space-between; }
-  .ctrlrow input[type=range] { width:100%; margin-top:5px; accent-color:#ff8a2a; }
+  .ctrlrow label { font-size:12px; color:var(--muted); display:flex; justify-content:space-between; }
+  .ctrlrow input[type=range] { width:100%; margin-top:5px; accent-color:var(--accent); }
   .btns { display:flex; gap:7px; margin-top:10px; }
-  .sbtn { flex:1; padding:8px 0; border-radius:8px; border:1px solid rgba(140,170,220,.28);
+  .sbtn { flex:1; padding:8px 0; border-radius:8px; border:1px solid var(--line);
     background:rgba(40,52,72,.6); color:#cfe0f5; font-size:12.5px; cursor:pointer; text-align:center; user-select:none; }
   .sbtn:hover { background:rgba(60,78,108,.8); }
+  .sbtn:focus-visible { outline:2px solid var(--info); outline-offset:2px; }
   .sbtn.on { background:rgba(56,96,150,.7); border-color:#6fa8e8; }
   .checkline { display:flex; align-items:center; gap:6px; margin-top:9px; font-size:12.5px; color:#b8c8e0; cursor:pointer; }
-  .checkline input { accent-color:#ff8a2a; }
+  .checkline input { accent-color:var(--accent); }
   #dash { right:18px; top:18px; width:228px; }
-  #dash h3 { font-size:13px; color:#9db4d6; font-weight:600; margin-bottom:10px; letter-spacing:1px; }
+  #dash h3 { font-size:13px; color:var(--muted); font-weight:600; margin-bottom:10px; letter-spacing:1px; }
   .drow { display:flex; justify-content:space-between; align-items:baseline; margin:8px 0; font-size:13px; }
   .drow .k { color:#8fa6c6; }
   .drow .v { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; color:#eaf1fb; }
   .drow .v small { font-size:12px; font-weight:400; color:#8fa6c6; }
   .bar { height:6px; border-radius:3px; background:rgba(255,255,255,.08); margin-top:3px; overflow:hidden; }
-  .bar i { display:block; height:100%; background:linear-gradient(90deg,#3fa0ff,#7ed0ff); transition:width .15s; }
+  .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--info),#7ed0ff); transition:width .15s; }
   #flowBox { margin-top:10px; font-size:12px; line-height:1.7; color:#b8c8e0;
     background:rgba(28,38,54,.6); border-radius:8px; padding:8px 10px; min-height:50px; }
   #flowBox b { color:#ffb066; }
@@ -51,6 +61,15 @@
     padding:8px 16px; text-align:center; }
   #stateTag { position:fixed; left:50%; top:22px; transform:translateX(-50%); font-size:26px; font-weight:800;
     letter-spacing:6px; text-shadow:0 2px 12px rgba(0,0,0,.8); pointer-events:none; }
+  /* 响应式：窄屏收紧面板 */
+  @media (max-width:760px){
+    #ctrl { width:168px; } #dash { width:188px; }
+    .panel { padding:10px 12px; }
+    #stateTag { font-size:20px; letter-spacing:3px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    * { transition:none !important; box-shadow:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -181,9 +200,17 @@ function solveKinematics(){
 /* ============================================================
    场景 / 渲染器（通用，一般无需改）
    ============================================================ */
+// 质量档位：'low' | 'standard' | 'high'，集中控制
+const QUALITY = 'standard';
+const QPRESET = {
+  low:      { pr:1,   shadow:512,  seg:12 },
+  standard: { pr:1.5, shadow:1024, seg:18 },
+  high:     { pr:2,   shadow:2048, seg:28 },
+}[QUALITY];
+
 const container = document.getElementById('app');
-const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({ antialias: QUALITY !== 'low' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, QPRESET.pr));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -207,13 +234,34 @@ controls.update();
 scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 const key = new THREE.DirectionalLight(0xffffff, 1.6);
 key.position.set(300, 400, 300); key.castShadow = true;
-key.shadow.mapSize.set(2048, 2048);
+key.shadow.mapSize.set(QPRESET.shadow, QPRESET.shadow);
 key.shadow.camera.left=-400;key.shadow.camera.right=400;
 key.shadow.camera.top=400;key.shadow.camera.bottom=-400;
 scene.add(key);
 const fillLight = new THREE.DirectionalLight(0x88aaff, 0.5);
 fillLight.position.set(-200, 100, -200);
 scene.add(fillLight);
+
+// 程序化环境光：不下载 HDR，用渐变+柔光箱生成 PMREM，提升金属反射质感
+function makeGradientEnv(){
+  const s = new THREE.Scene();
+  const R = 50, geo = new THREE.SphereGeometry(R, 24, 16);
+  const pos = geo.attributes.position, colors = [];
+  const top = new THREE.Color(0xffffff), mid = new THREE.Color(0x404858), bot = new THREE.Color(0x10141c);
+  for(let i=0;i<pos.count;i++){
+    const ny = pos.getY(i)/R;
+    const col = ny>0 ? mid.clone().lerp(top, ny) : mid.clone().lerp(bot, -ny);
+    colors.push(col.r, col.g, col.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+  s.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({side:THREE.BackSide, vertexColors:true})));
+  const strip = new THREE.Mesh(new THREE.PlaneGeometry(12,60), new THREE.MeshBasicMaterial({color:0xffffff}));
+  strip.position.set(30,10,30); s.add(strip);
+  const strip2 = strip.clone(); strip2.position.set(-30,-5,20); s.add(strip2);
+  return s;
+}
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(makeGradientEnv(), 0.04).texture;
 
 // 地面网格
 const grid = new THREE.GridHelper(1200, 40, 0x2a3a52, 0x182436);
@@ -225,6 +273,18 @@ labelRenderer.setSize(innerWidth, innerHeight);
 labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.top = '0';
 document.getElementById('labels').appendChild(labelRenderer.domElement);
+
+/* ============================================================
+   材质库：同参数材质共享，避免重复创建；高亮颜色预分配复用
+   ============================================================ */
+const MAT = (() => {
+  const cache = new Map();
+  return (key, opts) => {
+    if(!cache.has(key)) cache.set(key, new THREE.MeshStandardMaterial(opts));
+    return cache.get(key);
+  };
+})();
+const EMISSIVE_ON = new THREE.Color(0xff7a1a), EMISSIVE_OFF = new THREE.Color(0x000000);
 
 /* ============================================================
    渐开线齿轮几何（通用，可直接复用；支持直齿/斜齿）
@@ -276,8 +336,8 @@ function buildGear(spec){
   }
   // Extrude 默认沿 Z；旋转使齿轴沿世界 X
   geo.rotateY(Math.PI/2);
-  const mat = new THREE.MeshStandardMaterial({
-    color: spec.color || 0x9aa3ad, metalness:0.9, roughness:0.35 });
+  const mat = MAT('steel:'+(spec.color||0x9aa3ad),
+    { color: spec.color || 0x9aa3ad, metalness:0.9, roughness:0.35 });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.castShadow = true;
   return mesh;
@@ -297,11 +357,11 @@ function addLabel(text, pos, hot){
   scene.add(o); labelObjs.push(o); return o;
 }
 
-// 轴（简单圆柱）
+// 轴（简单圆柱，共享材质与段数档位）
 for(const [key, ax] of Object.entries(AXES)){
-  const sh = new THREE.CylinderGeometry(6, 6, 220, 24);
+  const sh = new THREE.CylinderGeometry(6, 6, 220, QPRESET.seg);
   sh.rotateZ(Math.PI/2);
-  const mesh = new THREE.Mesh(sh, new THREE.MeshStandardMaterial(
+  const mesh = new THREE.Mesh(sh, MAT('shaft',
     { color:0xb8c0c8, metalness:0.85, roughness:0.4 }));
   mesh.position.set(ax.pos[0], ax.pos[1], ax.pos[2]);
   scene.add(mesh);
@@ -341,7 +401,7 @@ function applyHighlight(){
   for(const [k, grp] of Object.entries(gearObjs)){
     grp.children.forEach(c => {
       if(c.material){
-        c.material.emissive = new THREE.Color(on && path.includes(k) ? 0xff7a1a : 0x000000);
+        c.material.emissive = on && path.includes(k) ? EMISSIVE_ON : EMISSIVE_OFF;
         c.material.emissiveIntensity = on && path.includes(k) ? 0.6 : 0;
       }
     });
@@ -385,20 +445,30 @@ function tick(now){
   updateDashboard();
   requestAnimationFrame(tick);
 }
+// 仪表 DOM 缓存：节点只查一次，数值变化才写入，避免每帧重排
+const ui = {
+  dIn: document.getElementById('dIn'), bIn: document.getElementById('bIn'),
+  dOut: document.getElementById('dOut'), bOut: document.getElementById('bOut'),
+  dRatio: document.getElementById('dRatio'),
+};
+const uiLast = { in:null, inW:null, out:null, outW:null, ratio:null };
 function updateDashboard(){
-  document.getElementById('dIn').innerHTML =
-    state.inputRpm + '<small> rpm</small>';
-  document.getElementById('bIn').style.width = (state.inputRpm/3000*100) + '%';
+  const inTxt = Math.round(state.inputRpm);
+  if(inTxt !== uiLast.in){ ui.dIn.firstChild.nodeValue = inTxt; uiLast.in = inTxt; }
+  const inW = Math.round(state.inputRpm/3000*100);
+  if(inW !== uiLast.inW){ ui.bIn.style.width = inW+'%'; uiLast.inW = inW; }
   const st = STATES[state.current];
   let outRpm = 0;
   if(state.current !== 'neutral'){
     const driven = st.path[st.path.length-1];
     outRpm = Math.abs(state.omega[driven])*60/(2*Math.PI);
   }
-  document.getElementById('dOut').innerHTML = Math.round(outRpm) + '<small> rpm</small>';
-  document.getElementById('bOut').style.width = (outRpm/3000*100) + '%';
-  document.getElementById('dRatio').textContent =
-    state.current==='neutral' ? '—' : st.ratio.toFixed(3);
+  const outTxt = Math.round(outRpm);
+  if(outTxt !== uiLast.out){ ui.dOut.firstChild.nodeValue = outTxt; uiLast.out = outTxt; }
+  const outW = Math.round(outRpm/3000*100);
+  if(outW !== uiLast.outW){ ui.bOut.style.width = outW+'%'; uiLast.outW = outW; }
+  const ratio = state.current==='neutral' ? '—' : st.ratio.toFixed(3);
+  if(ratio !== uiLast.ratio){ ui.dRatio.textContent = ratio; uiLast.ratio = ratio; }
 }
 // 兜底：隐藏标签下 rAF 可能停摆，确保仍能推进
 setInterval(() => {
